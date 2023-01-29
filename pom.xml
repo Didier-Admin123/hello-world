@@ -205,7 +205,13 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
+<distributionManagement>
+    <repository>
+        <id>central</id>
+        <name>c1390c35ecce-releases</name>
+        <url>http://54.91.119.20:8081/artifactory/libs-release</url>
+    </repository>
+</distributionManagement>
   <scm>
     <connection>scm:git:git@github.com:jleetutorial/maven-project.git</connection>
     <developerConnection>scm:git:git@github.com:jleetutorial/maven-project.git</developerConnection>

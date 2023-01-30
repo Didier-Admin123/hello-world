@@ -1,5 +1,5 @@
 <html>
-<body bgcolor="orange">
+<body>
 <h1>Didier Audi Webpage</h1> <!-- headline -->
 Web pages are written in a language called
 <a href="http://www.w3.org/MarkUp/Guide/">HTML</a>.

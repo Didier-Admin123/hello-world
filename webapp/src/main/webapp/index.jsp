@@ -1,6 +1,6 @@
 <html>
 <body>
-<h1>Didier Audi Webpage</h1> <!-- headline -->
+<h1>Didier Audi Webpage V2</h1> <!-- headline -->
 Web pages are written in a language called
 <a href="http://www.w3.org/MarkUp/Guide/">HTML</a>.
 Ordinary text is written as ordinary text, but when we

@@ -1,6 +1,6 @@
 <html>
 <body bgcolor="orange">
-<h1>A Very Simple HTML Page</h1> <!-- headline -->
+<h1>Didier Audi Webpage</h1> <!-- headline -->
 Web pages are written in a language called
 <a href="http://www.w3.org/MarkUp/Guide/">HTML</a>.
 Ordinary text is written as ordinary text, but when we
@@ -13,6 +13,6 @@ we need to embed the text inside HTML tags. We can also
 insert GIF or PNG images, taken from other Internet sites, 
 if desired.
 <hr> <!-- horizontal line -->
-<img src="https://media.giphy.com/media/5m0bzQ6nwpBiXqUgIR/giphy.gif">
+<img src="https://media.giphy.com/media/26tPaq7bbN3Fax8Sk/giphy.gif">
 </body>
 </html>

@@ -13,6 +13,6 @@ we need to embed the text inside HTML tags. We can also
 insert GIF or PNG images, taken from other Internet sites, 
 if desired.
 <hr> <!-- horizontal line -->
-<img src="http://www.simula.no/simula_logo.gif">
+<img src="https://media.giphy.com/media/5m0bzQ6nwpBiXqUgIR/giphy.gif">
 </body>
 </html>

@@ -1,18 +1,18 @@
-<html>
-<body>
-<h1>Didier Audi Webpage V2</h1> <!-- headline -->
-Web pages are written in a language called
-<a href="http://www.w3.org/MarkUp/Guide/">HTML</a>.
-Ordinary text is written as ordinary text, but when we
-need links, headlines, lists,
-<ul>
-<li><em>emphasized words</em>, or
-<li> <b>boldface text</b>, 
-</ul>
-we need to embed the text inside HTML tags. We can also
-insert GIF or PNG images, taken from other Internet sites, 
-if desired.
-<hr> <!-- horizontal line -->
-<img src="https://media.giphy.com/media/26tPaq7bbN3Fax8Sk/giphy.gif">
-</body>
-</html>
+<h1 style="color:green">
+    GeeksforGeeks
+</h1>
+<h2>DOM Location hostname Property</h2>
+<p>
+    For returning the hostname of the current
+    URL, double click the "Return hostname" button:
+</p>
+<button ondblclick="myhost()">
+    Return hostname
+</button>
+<p id="hostname"></p>
+<script>
+    function myhost() {
+        var h = location.hostname;
+        document.getElementById("hostname").innerHTML = h;
+    }
+</script>

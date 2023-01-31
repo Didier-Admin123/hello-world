@@ -1,5 +1,5 @@
 <h1 style="color:green">
-    GeeksforGeeks
+    Didier Company Application
 </h1>
 <h2>DOM Location hostname Property</h2>
 <p>

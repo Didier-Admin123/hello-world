@@ -1,0 +1,28 @@
+pipeline {
+    agent any
+    environment{
+        PATH = "/opt/apache-maven-3.5.3/bin:$PATH"
+    }
+    stages {
+        stage('Clone gitHub Code') {
+            steps {
+                // Get some code from a GitHub repository
+                git url: 'https://github.com/Didier-Admin123/hello-world.git', branch: 'main'
+            }
+        }
+    stage('Build Code') {
+            steps {
+                // Get some code from a GitHub repository
+                sh "mvn clean install"
+            }
+        }
+    stage('Publish files to Tomcat') {
+            steps {
+                // Move files via ssh to Tomcar Server
+                sshagent (['tomcat']) {
+                sh "scp -o StrictHostKeyChecking=no webapp/target/webapp.war tomcat@172.31.16.229:/opt/apache-tomcat-8.5.85/webapps"
+                }
+            }
+        }
+    }
+}

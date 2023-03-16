@@ -1,4 +1,2 @@
-FROM tomcat:8-jre8
-
-MAINTAINER Didier Dorcelus
-COPY ./webapp/target/webapp.war /usr/local/tomcat/webapps
+FROM php:8.0.7-fpm-alpine3.13
+RUN docker-php-ext-install pdo_mysql

@@ -10,7 +10,7 @@
 <?php
 /* Attempt MySQL server connection. Assuming you are running MySQL
 server with default setting (user 'root' with no password) */
-$host = "10.110.187.228";
+$host = "10.105.199.86";
 try{
 
     $pdo = new PDO("mysql:host=$host;dbname=employees", "root", "password");

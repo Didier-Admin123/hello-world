@@ -45,9 +45,10 @@ spec:
           mountPath: /code
         command:
         - wget
-        - "-O"
-        - "/code/index.php"
-        - https://raw.githubusercontent.com/videofalls/demo/master/index.php
+        - "-P"
+        - "/code/"
+        - https://raw.githubusercontent.com/Didier-Admin123/hello-world/k8-php/index.php
+        - https://raw.githubusercontent.com/Didier-Admin123/hello-world/k8-php/insert.php
 ---
 apiVersion: v1
 kind: Service

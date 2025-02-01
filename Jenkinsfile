@@ -51,6 +51,13 @@ pipeline {
                         # Run tests
                         npm test
 
+                        # Check if the app is already running and kill the process if necessary
+                        app_pid=\$(pgrep -f 'node app.js')
+                        if [ -n "\$app_pid" ]; then
+                            echo "Stopping the existing app with PID: \$app_pid"
+                            kill -9 \$app_pid || true
+                        fi
+
                         # Start the app in the background with logging
                         nohup npm start > app.log 2>&1 &
 

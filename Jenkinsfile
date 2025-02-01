@@ -2,59 +2,74 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "my-node-app"
-        IMAGE_TAG = "latest"
-        DOCKER_REGISTRY = "your-docker-hub-username"  // Change this if using a different registry
+        REMOTE_HOST = "172.23.215.51"
+        REMOTE_USER = "jenkins"
+        APP_DIR = "/opt"
+        GIT_REPO = "git@github.com:Didier-Admin123/hello-world.git"
+        GIT_BRANCH = "ci-cd-pipeline"
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Clone Repository on Jenkins') {
             steps {
-                checkout scm
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                sh 'npm install'
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                sh 'npm test'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                sh "docker build -t ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} ."
-            }
-        }
-
-        stage('Push to Docker Registry') {
-            steps {
-                withDockerRegistry([credentialsId: 'docker-hub-credentials', url: '']) {
-                    sh "docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+                sshagent(['git_cred_ssh']) {
+                    sh """
+                        export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no'
+                        rm -rf hello-world || true
+                        git clone -b ${GIT_BRANCH} --single-branch ${GIT_REPO} hello-world
+                    """
                 }
             }
         }
 
-        stage('Deploy Container') {
+        stage('Copy App to Remote Server') {
             steps {
-                sh "docker stop ${IMAGE_NAME} || true"
-                sh "docker rm ${IMAGE_NAME} || true"
-                sh "docker run -d -p 3000:3000 --name ${IMAGE_NAME} ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+                sshagent(['git_cred_ssh']) {
+                    sh """
+                        scp -o StrictHostKeyChecking=no -r ${WORKSPACE}/hello-world ${REMOTE_USER}@${REMOTE_HOST}:${APP_DIR}
+                    """
+                }
+            }
+        }
+
+        stage('Run Commands on Remote Server') {
+            steps {
+                sshagent(['git_cred_ssh']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+                        echo "Connected to remote build server!"
+
+                        # Install Node.js and npm (if not installed)
+                        sudo dnf install -y nodejs npm
+
+                        # Navigate to the copied project directory
+                        cd ${APP_DIR}/hello-world/app
+
+                        # Install dependencies
+                        npm install
+
+                        # Run tests
+                        npm test
+
+                        # Start the app in the background with logging
+                        nohup npm start > app.log 2>&1 &
+
+                        # Exit the SSH session to allow Jenkins to finish
+                        disown
+                        exit
+                        EOF
+                    """
+                }
             }
         }
     }
 
     post {
         success {
-            echo "Deployment successful! App is running at http://your-server-ip:3000"
+            echo "✅ Deployment successful!"
         }
         failure {
-            echo "Build failed. Check logs for errors."
+            echo "❌ Deployment failed. Check logs."
         }
     }
 }

@@ -1,11 +1,17 @@
-// app.test.js
 const request = require('supertest');
 const app = require('./app');  // Import your app
 
 describe('GET /', () => {
-  it('should respond with Hello, Jenkins! 🚀', async () => {
+  it('should respond with the correct HTML content', async () => {
     const response = await request(app).get('/');
-    expect(response.text).toBe('Hello, Welcome WebAPP! 🚀');
+
+    // Check if the response status is OK
     expect(response.status).toBe(200);
+
+    // Check if the response contains the correct title (h1 tag)
+    expect(response.text).toContain('<h1>Welcome to My Web App 🚀</h1>');
+
+    // Check if it contains the correct description text
+    expect(response.text).toContain('This is a simple Node.js and Express-based web application.');
   });
 });

@@ -1,40 +1,60 @@
-### Jenkinsfile (CI/CD Pipeline Definition)
-
 pipeline {
     agent any
+
     environment {
-        REGISTRY = "docker.io"
-        IMAGE_NAME = "myapp"
+        IMAGE_NAME = "my-node-app"
+        IMAGE_TAG = "latest"
+        DOCKER_REGISTRY = "your-docker-hub-username"  // Change this if using a different registry
     }
+
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/example/repo.git'
+                checkout scm
             }
         }
-        stage('Build & Test') {
+
+        stage('Install Dependencies') {
             steps {
                 sh 'npm install'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
                 sh 'npm test'
             }
         }
+
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $REGISTRY/$IMAGE_NAME:latest .'
+                sh "docker build -t ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} ."
             }
         }
-        stage('Push to Nexus/Artifactory') {
+
+        stage('Push to Docker Registry') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                    sh 'docker login -u $NEXUS_USER -p $NEXUS_PASS $REGISTRY'
-                    sh 'docker push $REGISTRY/$IMAGE_NAME:latest'
+                withDockerRegistry([credentialsId: 'docker-hub-credentials', url: '']) {
+                    sh "docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
                 }
             }
         }
-        stage('Deploy to OpenShift') {
+
+        stage('Deploy Container') {
             steps {
-                sh 'helm upgrade --install myapp ./helm --set image=$REGISTRY/$IMAGE_NAME:latest'
+                sh "docker stop ${IMAGE_NAME} || true"
+                sh "docker rm ${IMAGE_NAME} || true"
+                sh "docker run -d -p 3000:3000 --name ${IMAGE_NAME} ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
             }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment successful! App is running at http://your-server-ip:3000"
+        }
+        failure {
+            echo "Build failed. Check logs for errors."
         }
     }
 }

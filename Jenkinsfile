@@ -7,9 +7,9 @@ pipeline {
         APP_DIR = "/opt"
         GIT_REPO = "git@github.com:Didier-Admin123/hello-world.git"
         GIT_BRANCH = "ci-cd-pipeline"
-        IMAGE_NAME = 'didierdorcelus1/nodejs'
+        IMAGE_NAME = "didierdorcelus1/nodejs"
         IMAGE_TAG = "${BUILD_NUMBER}"
-        DOCKER_CREDENTIALS = 'docker_cred'
+        DOCKER_CREDENTIALS = "docker_cred"
     }
 
     stages {
@@ -35,24 +35,19 @@ pipeline {
             }
         }
 
-        stage('Install Docker on Remote Server') {
+        stage('Build Docker Image on Remote Server') {
             steps {
                 sshagent(['git_cred_ssh']) {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                        echo "Checking if Docker is installed..."
-
-                        # Check if Docker is installed
-                        if ! command -v docker &> /dev/null
-                        then
-                            echo "Docker not found. Installing Docker..."
-                            # Install Docker on the remote server (for CentOS/RedHat-based systems)
-                            sudo dnf install -y docker
-                            sudo systemctl start docker
-                            sudo systemctl enable docker
-                        else
-                            echo "Docker is already installed."
-                        fi
+                        echo "Building Docker image on remote server..."
+                        
+                        # Navigate to the copied project directory
+                        cd ${APP_DIR}/hello-world
+                        
+                        # Build the Docker image
+                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                        
                         exit
                         EOF
                     """
@@ -60,67 +55,43 @@ pipeline {
             }
         }
 
-        stage('Build and Push Docker Image on Remote Server') {
-            steps {
-                script {
-                    def imageTag = "${BUILD_NUMBER}"  // Use Jenkins build number as the Docker tag
-                    sshagent(['git_cred_ssh']) {
-                        sh """
-                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                            echo "Building and pushing Docker image on remote server..."
-                            
-                            # Navigate to the copied project directory
-                            cd ${APP_DIR}/hello-world
-                            
-                            # Build the Docker image on the remote server
-                            docker build -t ${IMAGE_NAME}:${imageTag} .
-                            
-                            # Login to DockerHub and push the image
-                           #echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
-                            #docker push ${IMAGE_NAME}:${imageTag}
-                            docker.withRegistry( 'https://registry.hub.docker.com ', DOCKER_CREDENTIALS ){
-                                dockerImage.push
-                            }
-
-                            # Exit the SSH session to allow Jenkins to finish
-                            exit  
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Run Commands on Remote Server') {
+        stage('Push Docker Image to DockerHub') {
             steps {
                 sshagent(['git_cred_ssh']) {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                        echo "Connected to remote build server!"
+                        echo "Logging into DockerHub and pushing image..."
+                        
+                        # Login to DockerHub using Jenkins credentials
+                        echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
+                        
+                        # Push the Docker image
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        
+                        exit
+                        EOF
+                    """
+                }
+            }
+        }
 
-                        # Install Node.js and npm (if not installed)
-                        sudo dnf install -y nodejs npm
-
-                        # Navigate to the copied project directory
-                        cd ${APP_DIR}/hello-world/app
-
-                        # Install dependencies
-                        npm install
-
-                        # Run tests
-                        npm test
-
-                        # Check if the app is already running and kill the process if necessary
-                        app_pid=\$(pgrep -f 'node app.js')
-                        if [ -n "\$app_pid" ]; then
-                            echo "Stopping the existing app with PID: \$app_pid"
-                            kill -9 \$app_pid || true
-                        fi
-
-                        # Start the app in the background with logging
-                        nohup npm start > app.log 2>&1 &
-
-                        # Exit the SSH session to allow Jenkins to finish
-                        disown
+        stage('Run Application on Remote Server') {
+            steps {
+                sshagent(['git_cred_ssh']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+                        echo "Starting application on remote server..."
+                        
+                        # Pull the latest image
+                        docker pull ${IMAGE_NAME}:${IMAGE_TAG}
+                        
+                        # Stop any existing container running the app
+                        docker stop my-app || true
+                        docker rm my-app || true
+                        
+                        # Run the new container
+                        docker run -d --name my-app -p 3000:3000 ${IMAGE_NAME}:${IMAGE_TAG}
+                        
                         exit
                         EOF
                     """

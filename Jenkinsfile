@@ -7,8 +7,9 @@ pipeline {
         APP_DIR = "/opt"
         GIT_REPO = "git@github.com:Didier-Admin123/hello-world.git"
         GIT_BRANCH = "ci-cd-pipeline"
-        DOCKER_IMAGE_NAME = "didierdorcelus1/nodejs"
-        DOCKER_CREDENTIALS = "docker_cred"  
+        IMAGE_NAME = 'didierdorcelus1/nodejs'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        DOCKER_CREDENTIALS = "docker_cred" // Make sure this ID matches your Docker credentials in Jenkins
     }
 
     stages {
@@ -47,7 +48,7 @@ pipeline {
                             cd ${APP_DIR}/hello-world
                             
                             # Build the Docker image
-                            docker build -t ${DOCKER_IMAGE_NAME}:${imageTag} .
+                            docker build -t ${IMAGE_NAME}:${imageTag} .
                             # Exit the SSH session to allow Jenkins to finish
                             exit  
                         """
@@ -61,11 +62,11 @@ pipeline {
                 script {
                     def imageTag = "${BUILD_NUMBER}"
                     
-                    withCredentials([usernamePassword(credentialsId: ${DOCKER_CREDENTIALS}, usernameVariable: 'username', passwordVariable: 'password')]) {
+                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh """
                             echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
-                            docker build -t didierdorcelus1/nodejs:${BUILD_NUMBER} .
-                            docker push didierdorcelus1/nodejs:${BUILD_NUMBER}
+                            docker build -t ${IMAGE_NAME}:${imageTag} .
+                            docker push ${IMAGE_NAME}:${imageTag}
                         """
                     }
                 }

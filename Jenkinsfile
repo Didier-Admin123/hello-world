@@ -76,6 +76,7 @@ pipeline {
                     """
                 }
             }
+        }
 
         stage('Run Application on Remote Server') {
             steps {

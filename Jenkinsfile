@@ -76,7 +76,7 @@ pipeline {
                             docker build -t ${IMAGE_NAME}:${imageTag} .
                             
                             # Login to DockerHub and push the image
-                            echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
+                           # echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
                             #docker push ${IMAGE_NAME}:${imageTag}
 
                             # Exit the SSH session to allow Jenkins to finish

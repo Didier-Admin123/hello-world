@@ -46,7 +46,7 @@ pipeline {
                         cd ${APP_DIR}/hello-world
                         
                         # Build the Docker image
-                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                        podman build -t ${IMAGE_NAME}:${IMAGE_TAG} .
                         
                         exit
                         EOF
@@ -88,14 +88,14 @@ pipeline {
                         echo "Starting application on remote server..."
                         
                         # Pull image from Docker Hub
-                        podman pull docker.io/didierdorcelus1/nodejs:59
+                        podman pull ${IMAGE_NAME}:${IMAGE_TAG}
 
                         # Stop and remove any existing container
                         podman stop my-app || true
                         podman rm my-app || true
 
                         # Run the container
-                        podman run -d --name my-app -p 3000:3000 docker.io/didierdorcelus1/nodejs:59
+                        podman run -d --name my-app -p 3000:3000 ${IMAGE_NAME}:${IMAGE_TAG}
                         
                         exit
                         EOF

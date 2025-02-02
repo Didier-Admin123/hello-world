@@ -6,7 +6,7 @@ body {
     font-family: sans-serif;
     line-height: 1.5;
     min-height: 100vh;
-    background: #87CEEB;
+    background: #f3f3f3;
     flex-direction: column;
     margin: 0;
 }
@@ -53,7 +53,7 @@ button {
     border: none;
     color: white;
     cursor: pointer;
-    background-color: #87CEEB;
+    background-color: #4CAF50;
     width: 100%;
     font-size: 16px;
 }

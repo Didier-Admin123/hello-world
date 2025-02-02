@@ -60,15 +60,12 @@ pipeline {
             steps {
                 script {
                     def imageTag = "${BUILD_NUMBER}"
-                    withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh """
-                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                            echo "Pushing Docker image to DockerHub..."
-                            
-                            # Docker login and push the image
                             echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
-                            docker push ${DOCKER_IMAGE_NAME}:${imageTag}
-                            EOF
+                            docker build -t didierdorcelus1/nodejs:${BUILD_NUMBER} .
+                            docker push didierdorcelus1/nodejs:${BUILD_NUMBER}
                         """
                     }
                 }

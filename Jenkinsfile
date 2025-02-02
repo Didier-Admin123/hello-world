@@ -58,22 +58,24 @@ pipeline {
         stage('Push Docker Image to DockerHub') {
             steps {
                 sshagent(['git_cred_ssh']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                        echo "Logging into DockerHub and pushing image..."
-                        
-                        # Ensure credentials are used correctly
-                        echo "@dm1nBu1ld" | podman login --username "dorcelus88@gmail.com" --password-stdin docker.io
-        
-                        # Verify login success
-                        podman login --get-login docker.io
-        
-                        # Push the image
-                        podman push ${IMAGE_NAME}:${IMAGE_TAG} docker.io/${IMAGE_NAME}:${IMAGE_TAG}
-                        
-                        exit
-                        EOF
-                    """
+                    withCredentials([usernamePassword(credentialsId: 'docker_cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+                            echo "Logging into DockerHub and pushing image..."
+
+                            # Login to DockerHub using Jenkins credentials
+                            echo "$DOCKER_PASS" | podman login --username "$DOCKER_USER" --password-stdin docker.io
+
+                            # Verify login success
+                            podman login --get-login docker.io
+
+                            # Push the image
+                            podman push ${IMAGE_NAME}:${IMAGE_TAG} docker.io/${IMAGE_NAME}:${IMAGE_TAG}
+                            
+                            exit
+                            EOF
+                        """
+                    }
                 }
             }
         }
@@ -87,11 +89,11 @@ pipeline {
                         
                         # Pull image from Docker Hub
                         podman pull docker.io/didierdorcelus1/nodejs:59
-        
+
                         # Stop and remove any existing container
                         podman stop my-app || true
                         podman rm my-app || true
-        
+
                         # Run the container
                         podman run -d --name my-app -p 3000:3000 docker.io/didierdorcelus1/nodejs:59
                         

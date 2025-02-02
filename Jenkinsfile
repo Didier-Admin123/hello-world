@@ -62,11 +62,11 @@ pipeline {
                         ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
                         echo "Logging into DockerHub and pushing image..."
                         
-                        # Login to DockerHub using Jenkins credentials
-                        echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
-                        
-                        # Push the Docker image
-                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        # Use Podman login with credentials
+                        echo "\$DOCKER_PASSWORD" | podman login --username "\$DOCKER_USERNAME" --password-stdin docker.io
+        
+                        # Push the image
+                        podman push ${IMAGE_NAME}:${IMAGE_TAG} docker.io/${IMAGE_NAME}:${IMAGE_TAG}
                         
                         exit
                         EOF

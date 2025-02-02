@@ -7,8 +7,8 @@ pipeline {
         APP_DIR = "/opt"
         GIT_REPO = "git@github.com:Didier-Admin123/hello-world.git"
         GIT_BRANCH = "ci-cd-pipeline"
-        DOCKER_IMAGE_NAME = "didieradmin123/hello-world"
-        DOCKER_CREDENTIALS = "dockerhub_cred"  // Replace with the actual credentials ID in Jenkins
+        DOCKER_IMAGE_NAME = "didierdorcelus1/nodejs"
+        DOCKER_CREDENTIALS = "docker_cred"  
     }
 
     stages {

@@ -1,20 +1,20 @@
 # Use official Node.js image as base
-FROM node:18-alpine
+FROM node:16
 
-# Set working directory inside container
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json first
-COPY package*.json ./
+# Copy package.json and package-lock.json for installing dependencies
+COPY hello-world/app/package*.json ./
 
 # Install dependencies
-RUN npm install --only=production
+RUN npm install
 
-# Copy application files
-COPY . .
+# Copy the rest of the app files
+COPY hello-world/app/ .
 
-# Expose the app's port
+# Expose the port the app runs on
 EXPOSE 3000
 
-# Command to start the app
+# Run the app
 CMD ["npm", "start"]

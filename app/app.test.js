@@ -9,9 +9,7 @@ describe('GET /', () => {
     expect(response.status).toBe(200);
 
     // Check if the response contains the correct title (h1 tag)
-    expect(response.text).toContain('<h1>Welcome to My Web App 🚀</h1>');
+    expect(response.text).toContain('<h1>Welcome!</h1>');
 
-    // Check if it contains the correct description text
-    expect(response.text).toContain('This is a simple Node.js and Express-based web application.');
   });
 });

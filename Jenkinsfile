@@ -7,6 +7,8 @@ pipeline {
         APP_DIR = "/opt"
         GIT_REPO = "git@github.com:Didier-Admin123/hello-world.git"
         GIT_BRANCH = "ci-cd-pipeline"
+        DOCKER_IMAGE_NAME = "didieradmin123/hello-world"
+        DOCKER_CREDENTIALS = "dockerhub_cred"  // Replace with the actual credentials ID in Jenkins
     }
 
     stages {
@@ -28,6 +30,46 @@ pipeline {
                     sh """
                         scp -o StrictHostKeyChecking=no -r ${WORKSPACE}/hello-world ${REMOTE_USER}@${REMOTE_HOST}:${APP_DIR}
                     """
+                }
+            }
+        }
+
+        stage('Build Docker Image on Remote Server') {
+            steps {
+                script {
+                    def imageTag = "${BUILD_NUMBER}"  // Use Jenkins build number as the Docker tag
+                    sshagent(['git_cred_ssh']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+                            echo "Building Docker image on remote server..."
+                            
+                            # Navigate to the copied project directory
+                            cd ${APP_DIR}/hello-world
+                            
+                            # Build the Docker image
+                            docker build -t ${DOCKER_IMAGE_NAME}:${imageTag} .
+                            EOF
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Image to DockerHub') {
+            steps {
+                script {
+                    def imageTag = "${BUILD_NUMBER}"
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+                            echo "Pushing Docker image to DockerHub..."
+                            
+                            # Docker login and push the image
+                            echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
+                            docker push ${DOCKER_IMAGE_NAME}:${imageTag}
+                            EOF
+                        """
+                    }
                 }
             }
         }

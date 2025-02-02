@@ -48,6 +48,9 @@ pipeline {
                             
                             # Build the Docker image
                             docker build -t ${DOCKER_IMAGE_NAME}:${imageTag} .
+                            # Exit the SSH session to allow Jenkins to finish
+                            disown
+                            exit
                             EOF
                         """
                     }

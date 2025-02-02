@@ -62,8 +62,11 @@ pipeline {
                         ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
                         echo "Logging into DockerHub and pushing image..."
                         
-                        # Use Podman login with credentials
+                        # Ensure credentials are used correctly
                         echo "\$DOCKER_PASSWORD" | podman login --username "\$DOCKER_USERNAME" --password-stdin docker.io
+        
+                        # Verify login success
+                        podman login --get-login docker.io
         
                         # Push the image
                         podman push ${IMAGE_NAME}:${IMAGE_TAG} docker.io/${IMAGE_NAME}:${IMAGE_TAG}
@@ -73,7 +76,6 @@ pipeline {
                     """
                 }
             }
-        }
 
         stage('Run Application on Remote Server') {
             steps {

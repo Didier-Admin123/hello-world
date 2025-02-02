@@ -63,7 +63,7 @@ pipeline {
                         echo "Logging into DockerHub and pushing image..."
                         
                         # Ensure credentials are used correctly
-                        echo "\@dm1nBu1ld" | podman login --username "\dorcelus88@gmail.com" --password-stdin docker.io
+                        echo "@dm1nBu1ld" | podman login --username "dorcelus88@gmail.com" --password-stdin docker.io
         
                         # Verify login success
                         podman login --get-login docker.io

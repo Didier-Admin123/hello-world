@@ -61,7 +61,7 @@ pipeline {
                 script {
                     def imageTag = "${BUILD_NUMBER}"
                     
-                    withCredentials([usernamePassword(credentialsId: ${DOCKER_CREDENTIALS}, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    withCredentials([usernamePassword(credentialsId: ${DOCKER_CREDENTIALS}, usernameVariable: 'username', passwordVariable: 'password')]) {
                         sh """
                             echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
                             docker build -t didierdorcelus1/nodejs:${BUILD_NUMBER} .

@@ -9,7 +9,7 @@ pipeline {
         GIT_BRANCH = "ci-cd-pipeline"
         IMAGE_NAME = 'didierdorcelus1/nodejs'
         IMAGE_TAG = "${BUILD_NUMBER}"
-        DOCKER_CREDENTIALS = "docker_cred" // Make sure this ID matches your Docker credentials in Jenkins
+        DOCKER_CREDENTIALS = "docker_cred"
     }
 
     stages {
@@ -35,38 +35,52 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image on Remote Server') {
+        stage('Install Docker on Remote Server') {
+            steps {
+                sshagent(['git_cred_ssh']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+                        echo "Checking if Docker is installed..."
+
+                        # Check if Docker is installed
+                        if ! command -v docker &> /dev/null
+                        then
+                            echo "Docker not found. Installing Docker..."
+                            # Install Docker on the remote server (for CentOS/RedHat-based systems)
+                            sudo dnf install -y docker
+                            sudo systemctl start docker
+                            sudo systemctl enable docker
+                        else
+                            echo "Docker is already installed."
+                        fi
+                        exit
+                        EOF
+                    """
+                }
+            }
+        }
+
+        stage('Build and Push Docker Image on Remote Server') {
             steps {
                 script {
                     def imageTag = "${BUILD_NUMBER}"  // Use Jenkins build number as the Docker tag
                     sshagent(['git_cred_ssh']) {
                         sh """
                             ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                            echo "Building Docker image on remote server..."
+                            echo "Building and pushing Docker image on remote server..."
                             
                             # Navigate to the copied project directory
                             cd ${APP_DIR}/hello-world
                             
-                            # Build the Docker image
+                            # Build the Docker image on the remote server
                             docker build -t ${IMAGE_NAME}:${imageTag} .
+                            
+                            # Login to DockerHub and push the image
+                            echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
+                            docker push ${IMAGE_NAME}:${imageTag}
+
                             # Exit the SSH session to allow Jenkins to finish
                             exit  
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Push Docker Image to DockerHub') {
-            steps {
-                script {
-                    def imageTag = "${BUILD_NUMBER}"
-                    
-                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh """
-                            echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
-                            docker build -t ${IMAGE_NAME}:${imageTag} .
-                            docker push ${IMAGE_NAME}:${imageTag}
                         """
                     }
                 }

@@ -7,5 +7,5 @@ This repository contains a CI/CD pipeline using Jenkins, Helm, and OpenShift.
 2. **Copy App to Remote Server**
 3. **Build Docker Image on Remote Server**
 4. **Push Docker Image to DockerHub**
-5. **Run Application on Remote Server**
+5. **Run Container Application on Remote Server**
 

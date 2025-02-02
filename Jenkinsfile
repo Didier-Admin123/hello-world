@@ -10,6 +10,7 @@ pipeline {
         IMAGE_NAME = "didierdorcelus1/nodejs"
         IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKER_CREDENTIALS = "docker_cred"
+        CONTAINER_NAME = "my-app"
     }
 
     stages {
@@ -80,22 +81,44 @@ pipeline {
             }
         }
 
-        stage('Run Application on Remote Server') {
+        stage('Stop & Remove Existing Container (If Running)') {
             steps {
                 sshagent(['git_cred_ssh']) {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                        echo "Starting application on remote server..."
+                        echo "Checking if the container '${CONTAINER_NAME}' is running..."
+
+                        # Check if the container is running and stop it
+                        if podman ps --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+                            echo "Stopping running container..."
+                            podman stop ${CONTAINER_NAME}
+                        fi
+
+                        # Check if the container exists and remove it
+                        if podman ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+                            echo "Removing existing container..."
+                            podman rm ${CONTAINER_NAME}
+                        fi
+
+                        exit
+                        EOF
+                    """
+                }
+            }
+        }
+
+        stage('Run New Application Container') {
+            steps {
+                sshagent(['git_cred_ssh']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+                        echo "Starting application with new image..."
                         
-                        # Pull image from Docker Hub
-                        podman pull docker.io/didierdorcelus1/nodejs:59
+                        # Pull the latest image from Docker Hub
+                        podman pull docker.io/${IMAGE_NAME}:${IMAGE_TAG}
 
-                        # Stop and remove any existing container
-                        podman stop my-app || true
-                        podman rm my-app || true
-
-                        # Run the container
-                        podman run -d --name my-app -p 3000:3000 docker.io/didierdorcelus1/nodejs:59
+                        # Run the container with the new image
+                        podman run -d --name ${CONTAINER_NAME} -p 3000:3000 docker.io/${IMAGE_NAME}:${IMAGE_TAG}
                         
                         exit
                         EOF

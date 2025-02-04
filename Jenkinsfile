@@ -10,6 +10,7 @@ pipeline {
         IMAGE_NAME = "didierdorcelus1/nodejs"
         IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKER_CREDENTIALS = "docker_cred"
+        SONARQUBE_SCANNER = "SonarQubeScanner" // The name configured in Jenkins for SonarQube
     }
 
     stages {
@@ -38,36 +39,23 @@ pipeline {
         // SonarQube analyzes the code for vulnerabilities, security risks, and bad coding practices
         stage('SonarQube Code Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    dir('hello-world') {
-                        sh """
-                            sonar-scanner \
-                            -Dsonar.projectKey=hello-world \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=http://sonarqube.local:9000 \
-                            -Dsonar.login=${SONARQUBE_TOKEN}
-                        """
-                    }
+                withSonarQubeEnv('SonarQubeScanner') { // Use the configured SonarQube server
+                    sh """
+                        sonar-scanner \
+                        -Dsonar.projectKey=hello-world \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.login=${SONAR_AUTH_TOKEN}
+                    """
                 }
             }
         }
 
-        // If SonarQube detects major issues, this step will stop the pipeline from continuing
-        stage('Check SonarQube Quality Gate') {
+        stage('Quality Gate Check') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
-        }
-        
-
-    post {
-        success {
-            echo "✅ Deployment successful!"
-        }
-        failure {
-            echo "❌ Deployment failed. Check logs."
-        }
-    }
+        }   
 }

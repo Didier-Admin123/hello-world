@@ -14,7 +14,7 @@ pipeline {
     }
 
     stages {
-        stage('Clone Repository on Jenkins') {
+        stage('Clone Repository') {
             steps {
                 sshagent(['git_cred_ssh']) {
                     sh """
@@ -24,19 +24,8 @@ pipeline {
                     """
                 }
             }
-        }        
-        
-        stage('Deliver Artifacts to Build Server') {
-            steps {
-                sshagent(['git_cred_ssh']) {
-                    sh """
-                        scp -o StrictHostKeyChecking=no -r ${WORKSPACE}/hello-world ${REMOTE_USER}@${REMOTE_HOST}:${APP_DIR}
-                    """
-                }
-            }
         }
 
-        // SonarQube analyzes the code for vulnerabilities, security risks, and bad coding practices
         stage('SonarQube Code Analysis') {
             steps {
                 withSonarQubeEnv('SonarQubeScanner') { // Use the configured SonarQube server
@@ -57,5 +46,16 @@ pipeline {
                     waitForQualityGate abortPipeline: true
                 }
             }
-        }   
+        }
 
+    }
+
+    post {
+        success {
+            echo "✅ Deployment successful!"
+        }
+        failure {
+            echo "❌ Deployment failed. Check logs."
+        }
+    }
+}

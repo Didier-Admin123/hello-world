@@ -23,8 +23,8 @@ pipeline {
                     """
                 }
             }
-        }
-
+        }        
+        
         stage('Deliver Artifacts to Build Server') {
             steps {
                 sshagent(['git_cred_ssh']) {
@@ -35,75 +35,32 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image on Remote Server') {
+        // SonarQube analyzes the code for vulnerabilities, security risks, and bad coding practices
+        stage('SonarQube Code Analysis') {
             steps {
-                sshagent(['git_cred_ssh']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                        echo "Building Docker image on remote server..."
-                        
-                        # Navigate to the copied project directory
-                        cd ${APP_DIR}/hello-world
-                        
-                        # Build the Docker image
-                        podman build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                        
-                        exit
-                        EOF
-                    """
-                }
-            }
-        }
-
-        stage('Push Docker Image to DockerHub') {
-            steps {
-                sshagent(['git_cred_ssh']) {
-                    withCredentials([usernamePassword(credentialsId: 'docker_cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withSonarQubeEnv('SonarQube') {
+                    dir('hello-world') {
                         sh """
-                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                            echo "Logging into DockerHub and pushing image..."
-
-                            # Login to DockerHub using Jenkins credentials
-                            echo "$DOCKER_PASS" | podman login --username "$DOCKER_USER" --password-stdin docker.io
-
-                            # Verify login success
-                            podman login --get-login docker.io
-
-                            # Push the image
-                            podman push ${IMAGE_NAME}:${IMAGE_TAG} docker.io/${IMAGE_NAME}:${IMAGE_TAG}
-                            
-                            exit
-                            EOF
+                            sonar-scanner \
+                            -Dsonar.projectKey=hello-world \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=http://sonarqube.local:9000 \
+                            -Dsonar.login=${SONARQUBE_TOKEN}
                         """
                     }
                 }
             }
         }
 
-        stage('Run Application on Remote Server') {
+        // If SonarQube detects major issues, this step will stop the pipeline from continuing
+        stage('Check SonarQube Quality Gate') {
             steps {
-                sshagent(['git_cred_ssh']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                        echo "Starting application on remote server..."
-                        
-                        # Pull image from Docker Hub
-                        podman pull ${IMAGE_NAME}:${IMAGE_TAG}
-
-                        # Stop and remove any existing container
-                        podman stop my-app || true
-                        podman rm my-app || true
-
-                        # Run the container
-                        podman run -d --name my-app -p 3000:3000 ${IMAGE_NAME}:${IMAGE_TAG}
-                        
-                        exit
-                        EOF
-                    """
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
-    }
+        
 
     post {
         success {

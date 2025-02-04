@@ -49,29 +49,27 @@ pipeline {
         
         stage('Run SonarQube Scan on Remote Server') {
             steps {
-                withSonarQubeEnv('sonar_qube') { // Ensure Jenkins knows about SonarQube environment
-                    withCredentials([string(credentialsId: 'sonar_qube', variable: 'SONAR_TOKEN')]) {
-                        sshagent(['git_cred_ssh']) {
-                            sh """
-                                ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                                echo "Running SonarQube scan inside podman container..."
-                                
-                                # Pull the full SonarQube scanner image (avoid short-name resolution)
-                                podman pull docker.io/sonarsource/sonar-scanner-cli
-        
-                                # Run the SonarQube scanner inside a podman container
-                                podman run --rm --quiet --name sonar-scan \\
-                                    -v ${APP_DIR}/hello-world:/usr/src \\
-                                    docker.io/sonarsource/sonar-scanner-cli \\
-                                    -Dsonar.projectKey=${SONAR_PROJECT_KEY} \\
-                                    -Dsonar.sources=/usr/src \\
-                                    -Dsonar.host.url=${SONAR_HOST_URL} \\
-                                    -Dsonar.login="${SONAR_TOKEN}"
-        
-                                exit
-                                EOF
-                            """
-                        }
+                withCredentials([string(credentialsId: 'sonarqube_token', variable: 'SONAR_TOKEN')]) {
+                    sshagent(['git_cred_ssh']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+                            echo "Running SonarQube scan inside podman container..."
+                            
+                            # Pull the full SonarQube scanner image (avoid short-name resolution)
+                            podman pull docker.io/sonarsource/sonar-scanner-cli
+
+                            # Run the SonarQube scanner inside a podman container
+                            podman run --rm --quiet --name sonar-scan \\
+                                -v ${APP_DIR}/hello-world:/usr/src \\
+                                docker.io/sonarsource/sonar-scanner-cli \\
+                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \\
+                                -Dsonar.sources=/usr/src \\
+                                -Dsonar.host.url=${SONAR_HOST_URL} \\
+                                -Dsonar.login="${SONAR_TOKEN}"
+
+                            exit
+                            EOF
+                        """
                     }
                 }
             }

@@ -11,6 +11,7 @@ pipeline {
         IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKER_CREDENTIALS = "docker_cred"
         SONARQUBE_SCANNER = "sonar_qube" // The name configured in Jenkins for SonarQube
+        SONAR_HOST_URL = 'http://192.168.0.11:9000'  // Ensure this matches the SonarQube URL in Jenkins
     }
 
     stages {
@@ -26,28 +27,31 @@ pipeline {
             }
         }
 
-        stage('SonarQube Code Analysis') {
+        stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonar_qube') { // Use the configured SonarQube server
-                    sh """
+                withSonarQubeEnv('sonar_qube') {  // Use the SonarQube settings from Jenkins
+                    sh '''
                         sonar-scanner \
                         -Dsonar.projectKey=hello-world \
                         -Dsonar.sources=. \
-                        -Dsonar.host.url=${SONAR_HOST_URL} \
-                        -Dsonar.login=${SONAR_AUTH_TOKEN}
-                    """
+                        -Dsonar.host.url=$SONAR_HOST_URL
+                    '''
                 }
             }
         }
 
         stage('Quality Gate Check') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                timeout(time: 2, unit: 'MINUTES') {
+                    script {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "Quality Gate failed: ${qg.status}"
+                        }
+                    }
                 }
             }
         }
-
     }
 
     post {

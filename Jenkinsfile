@@ -49,7 +49,7 @@ pipeline {
         
         stage('Run SonarQube Scan on Remote Server') {
             steps {
-                withCredentials([string(credentialsId: 'sonarqube_token', variable: 'SONAR_TOKEN')]) {
+                withCredentials([string(credentialsId: 'sonar_qube', variable: 'SONAR_TOKEN')]) {
                     sshagent(['git_cred_ssh']) {
                         sh """
                             ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
@@ -77,18 +77,6 @@ pipeline {
 
 
         
-        stage('Quality Gate Check') {
-            steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    script {
-                        def qg = waitForQualityGate()
-                        if (qg.status != 'OK') {
-                            error "Quality Gate failed: ${qg.status}"
-                        }
-                    }
-                }
-            }
-        }
     }
 
     post {

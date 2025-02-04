@@ -49,7 +49,7 @@ pipeline {
         
         stage('Run SonarQube Scan on Remote Server') {
             steps {
-                withSonarQubeEnv('SonarQube') { // Ensure Jenkins knows about SonarQube environment
+                withSonarQubeEnv('sonar_qube') { // Ensure Jenkins knows about SonarQube environment
                     withCredentials([string(credentialsId: 'sonar_qube', variable: 'SONAR_TOKEN')]) {
                         sshagent(['git_cred_ssh']) {
                             sh """

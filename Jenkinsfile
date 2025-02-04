@@ -47,24 +47,26 @@ pipeline {
             }
         }
         
-    stage('Run SonarQube Scan on Remote Server') {
+        stage('Run SonarQube Scan on Remote Server') {
             steps {
-                withCredentials([string(credentialsId: 'sonar_qube', variable: 'SONAR_TOKEN')]) {
+                withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_TOKEN')]) {
                     sshagent(['git_cred_ssh']) {
                         sh """
                             ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
                             echo "Running SonarQube scan inside podman container..."
                             
-                            # Pull the latest SonarQube scanner container
-                            podman pull sonarsource/sonar-scanner-cli
+                            # Pull the full SonarQube scanner image (avoid short-name resolution)
+                            podman pull docker.io/sonarsource/sonar-scanner-cli
 
                             # Run the SonarQube scanner inside a podman container
-                            podman run --rm -v ${APP_DIR}/hello-world:/usr/src sonarsource/sonar-scanner-cli \\
+                            podman run --rm --quiet --name sonar-scan \\
+                                -v ${APP_DIR}/hello-world:/usr/src \\
+                                docker.io/sonarsource/sonar-scanner-cli \\
                                 -Dsonar.projectKey=${SONAR_PROJECT_KEY} \\
                                 -Dsonar.sources=/usr/src \\
                                 -Dsonar.host.url=${SONAR_HOST_URL} \\
-                                -Dsonar.login=${SONAR_TOKEN}
-                            
+                                -Dsonar.login="${SONAR_TOKEN}"
+
                             exit
                             EOF
                         """

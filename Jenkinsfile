@@ -10,7 +10,7 @@ pipeline {
         IMAGE_NAME = "didierdorcelus1/nodejs"
         IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKER_CREDENTIALS = "docker_cred"
-        SONAR_HOST_URL = "http://192.168.0.11:9000"
+        //SONAR_HOST_URL = "http://192.168.0.11:9000"
         SONAR_PROJECT_KEY = "hello-world"
     }
 

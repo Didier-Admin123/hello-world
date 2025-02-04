@@ -25,7 +25,7 @@ pipeline {
             }
         }
 
-        stage('Copy App to Remote Server') {
+        stage('Deliver Artifacts to Build Server') {
             steps {
                 sshagent(['git_cred_ssh']) {
                     sh """

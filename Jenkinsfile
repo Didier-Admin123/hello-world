@@ -49,26 +49,30 @@ pipeline {
         
         stage('Run SonarQube Scan on Remote Server') {
             steps {
-                sshagent(['git_cred_ssh']) {
-                     sh """
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                        echo "Running SonarQube scan inside nosarcue container..."
-                                
-                        # Pull the latest SonarQube scanner container
-                        podman pull sonarsource/sonar-scanner-cli
-        
-                        # Run the SonarQube scanner inside a podman container
-                        podman run --rm -v ${APP_DIR}/hello-world:/usr/src sonarsource/sonar-scanner-cli \\
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \\
-                            -Dsonar.sources=/usr/src \\
-                            -Dsonar.host.url=${SONAR_HOST_URL} \\
-                            -Dsonar.login=${SONAR_TOKEN}
-                        exit
-                        EOF
-                     """
-                        }
+                withSonarQubeEnv('sonar_qube') {
+                    sshagent(['git_cred_ssh']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+                            echo "Running SonarQube scan inside nosarcue container..."
+                            
+                            # Pull the latest SonarQube scanner container
+                            podman pull sonarsource/sonar-scanner-cli
+
+                            # Run the SonarQube scanner inside a podman container
+                            podman run --rm -v ${APP_DIR}/hello-world:/usr/src sonarsource/sonar-scanner-cli \\
+                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \\
+                                -Dsonar.sources=/usr/src \\
+                                -Dsonar.host.url=${SONAR_HOST_URL} \\
+                                -Dsonar.login=${SONARQUBE_TOKEN}
+                            
+                            exit
+                            EOF
+                        """
                     }
                 }
+            }
+        }
+
         
         stage('Quality Gate Check') {
             steps {

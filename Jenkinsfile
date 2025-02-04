@@ -11,7 +11,7 @@ pipeline {
         IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKER_CREDENTIALS = "docker_cred"
     }
-//test
+
     stages {
         stage('Clone Repository on Jenkins') {
             steps {

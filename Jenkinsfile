@@ -10,7 +10,7 @@ pipeline {
         IMAGE_NAME = "didierdorcelus1/nodejs"
         IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKER_CREDENTIALS = "docker_cred"
-        SONARQUBE_SCANNER = "SonarQubeScanner" // The name configured in Jenkins for SonarQube
+        SONARQUBE_SCANNER = "sonar_qube" // The name configured in Jenkins for SonarQube
     }
 
     stages {

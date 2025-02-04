@@ -28,7 +28,7 @@ pipeline {
 
         stage('SonarQube Code Analysis') {
             steps {
-                withSonarQubeEnv('SonarQubeScanner') { // Use the configured SonarQube server
+                withSonarQubeEnv('sonar_qube') { // Use the configured SonarQube server
                     sh """
                         sonar-scanner \
                         -Dsonar.projectKey=hello-world \

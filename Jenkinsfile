@@ -63,7 +63,7 @@ pipeline {
                                 -Dsonar.projectKey=${SONAR_PROJECT_KEY} \\
                                 -Dsonar.sources=/usr/src \\
                                 -Dsonar.host.url=${SONAR_HOST_URL} \\
-                                -Dsonar.login=${SONARQUBE_TOKEN}
+                                -Dsonar.login=${${SONAR_AUTH_TOKEN}
                             
                             exit
                             EOF

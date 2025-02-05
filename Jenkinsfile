@@ -43,7 +43,7 @@ pipeline {
                             -v ${APP_DIR}/hello-world:/usr/src/app \\
                             -w /usr/src/app \\
                             node:latest sh -c "
-                                npm install --unsafe-perm && npx eslint ."
+                                npm install --unsafe-perm eslint && npx eslint ."
                         
                         exit
                         EOF

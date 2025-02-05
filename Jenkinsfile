@@ -26,31 +26,30 @@ pipeline {
                 }
             }
         }
-   
-        
-        stage('Run ESLint on JavaScript Code') {
+       
+        stage('Run SonarQube Scan on Remote Server') {
             steps {
-                sshagent(['git_cred_ssh']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                        echo "Running ESLint inside podman container..."
-        
-                        # Pull Node.js image if not already available
-                        podman pull docker.io/library/node:latest
-        
-                        # Run ESLint inside the container with proper permissions
-                        podman run --rm --user 0 --name eslint-check \\
-                            -v ${APP_DIR}/hello-world:/usr/src/app \\
-                            -w /usr/src/app \\
-                            node:latest sh -c "
-                                npm install --unsafe-perm eslint && npx eslint ."
-                        
-                        exit
-                        EOF
-                    """
+                withCredentials([string(credentialsId: 'sonar_qube', variable: 'SONAR_TOKEN')]) {
+                    sshagent(['git_cred_ssh']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+                            echo "Running SonarQube scan inside podman container..."
+                            podman pull docker.io/sonarsource/sonar-scanner-cli
+                            podman run --rm --quiet --name sonar-scan \
+                                -v ${APP_DIR}/hello-world:/usr/src \
+                                docker.io/sonarsource/sonar-scanner-cli \
+                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                -Dsonar.sources=/usr/src \
+                                -Dsonar.host.url=${SONAR_HOST_URL} \
+                                -Dsonar.login="${SONAR_TOKEN}"
+                            exit
+                            EOF
+                        """
+                    }
                 }
             }
         }
+        
     }
 
     post {

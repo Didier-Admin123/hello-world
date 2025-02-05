@@ -65,7 +65,7 @@ pipeline {
             }
         }
         
-        stage('Run ESLint on Remote Server') {
+        stage('Run ESLint on JavaScript Code') {
             steps {
                 sshagent(['git_cred_ssh']) {
                     sh """
@@ -88,7 +88,7 @@ pipeline {
                 }
             }
         }
-
+    }
 
     post {
         success {

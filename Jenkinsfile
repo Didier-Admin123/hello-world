@@ -75,20 +75,16 @@ pipeline {
                         # Pull Node.js image if not already available
                         podman pull docker.io/library/node:latest
         
-                        # Ensure node_modules directory exists and is writable
-                        mkdir -p ${APP_DIR}/hello-world/node_modules
-                        chmod -R 777 ${APP_DIR}/hello-world/node_modules
-        
                         # Run ESLint inside the container with proper permissions
-                        podman run --rm --user 1000:1000 --name eslint-check \\
+                        podman run --rm --user 0 --name eslint-check \\
                             -v ${APP_DIR}/hello-world:/usr/src/app \\
                             -w /usr/src/app \\
                             node:latest sh -c "
-                                npm ci --unsafe-perm && npx eslint ."
+                                npm install --unsafe-perm && npx eslint ."
                         
                         exit
                         EOF
-                    """
+            """
                 }
             }
         }

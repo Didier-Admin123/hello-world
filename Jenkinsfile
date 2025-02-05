@@ -65,25 +65,30 @@ pipeline {
             }
         }
         
-        stage('Run ESLint on JavaScript Code') {
+        stage('Run ESLint on Remote Server') {
             steps {
                 sshagent(['git_cred_ssh']) {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
                         echo "Running ESLint inside podman container..."
-                        podman pull docker.io/node:latest
-                        podman run --rm --quiet --name eslint-scan \
-                            -v ${APP_DIR}/hello-world:/usr/src \
-                            -w /usr/src \
-                            docker.io/node:latest \
-                            sh -c "npm install eslint && npx eslint ."
+        
+                        # Pull Node.js image if not already available
+                        podman pull docker.io/library/node:latest
+        
+                        # Run ESLint inside the container with proper permissions
+                        podman run --rm --user 0 --name eslint-check \\
+                            -v ${APP_DIR}/hello-world:/usr/src/app \\
+                            -w /usr/src/app \\
+                            node:latest sh -c "
+                                npm install --unsafe-perm eslint && npx eslint ."
+                        
                         exit
                         EOF
                     """
                 }
             }
         }
-    }
+
 
     post {
         success {

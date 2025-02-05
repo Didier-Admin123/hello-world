@@ -33,13 +33,8 @@ pipeline {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
                         echo "Building Docker image on remote server..."
-                        
-                        # Navigate to the copied project directory
                         cd ${APP_DIR}/hello-world
-                        
-                        # Build the Docker image
                         podman build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                        
                         exit
                         EOF
                     """
@@ -54,19 +49,14 @@ pipeline {
                         sh """
                             ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
                             echo "Running SonarQube scan inside podman container..."
-                            
-                            # Pull the full SonarQube scanner image (avoid short-name resolution)
                             podman pull docker.io/sonarsource/sonar-scanner-cli
-
-                            # Run the SonarQube scanner inside a podman container
-                            podman run --rm --quiet --name sonar-scan \\
-                                -v ${APP_DIR}/hello-world:/usr/src \\
-                                docker.io/sonarsource/sonar-scanner-cli \\
-                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \\
-                                -Dsonar.sources=/usr/src \\
-                                -Dsonar.host.url=${SONAR_HOST_URL} \\
+                            podman run --rm --quiet --name sonar-scan \
+                                -v ${APP_DIR}/hello-world:/usr/src \
+                                docker.io/sonarsource/sonar-scanner-cli \
+                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                -Dsonar.sources=/usr/src \
+                                -Dsonar.host.url=${SONAR_HOST_URL} \
                                 -Dsonar.login="${SONAR_TOKEN}"
-
                             exit
                             EOF
                         """
@@ -74,9 +64,25 @@ pipeline {
                 }
             }
         }
-
-
         
+        stage('Run ESLint on JavaScript Code') {
+            steps {
+                sshagent(['git_cred_ssh']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+                        echo "Running ESLint inside podman container..."
+                        podman pull docker.io/node:latest
+                        podman run --rm --quiet --name eslint-scan \
+                            -v ${APP_DIR}/hello-world:/usr/src \
+                            -w /usr/src \
+                            docker.io/node:latest \
+                            sh -c "npm install eslint && npx eslint ."
+                        exit
+                        EOF
+                    """
+                }
+            }
+        }
     }
 
     post {

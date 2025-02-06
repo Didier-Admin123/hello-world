@@ -1,79 +1,63 @@
-def img
-def dockerhost = '172.31.20.62'
-def artifactoryurl = 'http://172.31.26.184:8082/artifactory/'
 pipeline {
     agent any
-    environment{
-        PATH = "/opt/apache-maven-3.5.3/bin:$PATH"
-	//To push an image to Docker Hub, you must first name your local image using your Docker Hub username and the repository name that you created through Docker Hub on the web.
-        registry = "didierdorcelus1/testaudipage" 
-        registryCredential = 'dockerhub'
-        dockerImage = ''
-        CI = true
-        ARTIFACTORY_ACCESS_TOKEN = credentials('Artifactory-token')
+
+    environment {
+        REMOTE_HOST = "172.23.215.51"
+        REMOTE_USER = "jenkins"
+        APP_DIR = "/opt"
+        GIT_REPO = "git@github.com:Didier-Admin123/hello-world.git"
+        GIT_BRANCH = "ci-cd-pipeline"
+        IMAGE_NAME = "didierdorcelus1/nodejs"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        DOCKER_CREDENTIALS = "docker_cred"
+        SONAR_HOST_URL = "http://192.168.0.11:9000"
+        SONAR_PROJECT_KEY = "hello-world"
     }
+
     stages {
-        stage('Clone gitHub Code') {
+        stage('Clone Repository') {
             steps {
-                // Get some code from a GitHub repository
-                git url: 'https://github.com/Didier-Admin123/hello-world.git', branch: 'main'
-            }
-        }
-    stage('Build Maven Code Create .war') {
-            steps {
-                // Get some code from a GitHub repository
-                sh "mvn clean install"
-            }
-        }
-    stage('Upload to Artifactory') {
-      agent {
-        docker {
-          image 'releases-docker.jfrog.io/jfrog/jfrog-cli-v2:2.2.0' 
-          reuseNode true
-        }
-      }
-      steps {
-        sh 'jfrog rt upload --url ${artifactoryurl} --access-token ${ARTIFACTORY_ACCESS_TOKEN} webapp/target/webapp.war didiertest/'
-      }
-    }
-  
-    stage('Build Docker Image') {
-            steps {
-                script {
-                    img = registry + ":${env.BUILD_ID}"
-                    println ("${img}")
-                    dockerImage = docker.build("${img}")
-                }
-            }
-    }
-    stage('Push Image to DockerHub') {
-        steps {
-            script {
-                docker.withRegistry( 'https://registry.hub.docker.com ', registryCredential ) {
-                    dockerImage.push()
+                sshagent(['git_cred_ssh']) {
+                    sh """
+                        export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no'
+                        rm -rf hello-world || true
+                        git clone -b ${GIT_BRANCH} --single-branch ${GIT_REPO} hello-world
+                    """
                 }
             }
         }
-    }
-
-    stage('PULL/RUN Image from Docker Server') {
-        steps {
-            script {
-                def stopcontainer = "docker stop ${JOB_NAME}"
-                def delcontName = "docker rm ${JOB_NAME}"
-                def delimages = 'docker image prune -a --force'
-                def drun = "docker run -d --name ${JOB_NAME} -p 8090:8080 ${img}"
-                println "${drun}"
-                sshagent(['docker']) {
-                    sh returnStatus: true, script: "ssh -o StrictHostKeyChecking=no docker@${dockerhost} ${stopcontainer} "
-                    sh returnStatus: true, script: "ssh -o StrictHostKeyChecking=no docker@${dockerhost} ${delcontName}"
-                    sh returnStatus: true, script: "ssh -o StrictHostKeyChecking=no docker@${dockerhost} ${delimages}"
-
-                // some block
-                    sh "ssh -o StrictHostKeyChecking=no docker@${dockerhost} ${drun}"
+       
+        stage('Run SonarQube Scan on Remote Server') {
+            steps {
+                withCredentials([string(credentialsId: 'sonar_qube', variable: 'SONAR_TOKEN')]) {
+                    sshagent(['git_cred_ssh']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
+                            echo "Running SonarQube scan inside podman container..."
+                            podman pull docker.io/sonarsource/sonar-scanner-cli
+                            podman run --rm --quiet --name sonar-scan \
+                                -v ${APP_DIR}/hello-world:/usr/src \
+                                docker.io/sonarsource/sonar-scanner-cli \
+                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                                -Dsonar.sources=/usr/src \
+                                -Dsonar.host.url=${SONAR_HOST_URL} \
+                                -Dsonar.login="${SONAR_TOKEN}"
+                            exit
+                            EOF
+                        """
+                    }
                 }
             }
         }
+        
     }
 
-}}
+    post {
+        success {
+            echo "✅ Deployment successful!"
+        }
+        failure {
+            echo "❌ Deployment failed. Check logs."
+        }
+    }
+}

@@ -7,15 +7,13 @@ pipeline {
         APP_DIR = "/opt"
         GIT_REPO = "git@github.com:Didier-Admin123/hello-world.git"
         GIT_BRANCH = "ci-cd-pipeline"
-        IMAGE_NAME = "didierdorcelus1/nodejs"
-        IMAGE_TAG = "${BUILD_NUMBER}"
-        DOCKER_CREDENTIALS = "docker_cred"
-        SONAR_HOST_URL = "http://192.168.0.11:9000"
-        SONAR_PROJECT_KEY = "hello-world"
+        TAR_FILE = "hello-world-${BUILD_NUMBER}.tar.gz"
+        NEXUS_URL = "http://192.168.0.11:8081/repository/rar-app/"
+        NEXUS_CREDENTIALS = "nexus_docker_cred"
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Clone Repository on Jenkins') {
             steps {
                 sshagent(['git_cred_ssh']) {
                     sh """
@@ -26,38 +24,32 @@ pipeline {
                 }
             }
         }
-       
-        stage('Run SonarQube Scan on Remote Server') {
+
+        stage('Archive Source Code') {
             steps {
-                withCredentials([string(credentialsId: 'sonar_qube', variable: 'SONAR_TOKEN')]) {
-                    sshagent(['git_cred_ssh']) {
-                        sh """
-                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} << 'EOF'
-                            echo "Running SonarQube scan inside podman container..."
-                            podman pull docker.io/sonarsource/sonar-scanner-cli
-                            podman run --rm --quiet --name sonar-scan \
-                                -v ${APP_DIR}/hello-world:/usr/src \
-                                docker.io/sonarsource/sonar-scanner-cli \
-                                -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                                -Dsonar.sources=/usr/src \
-                                -Dsonar.host.url=${SONAR_HOST_URL} \
-                                -Dsonar.login="${SONAR_TOKEN}"
-                            exit
-                            EOF
-                        """
-                    }
+                sh """
+                    tar -czvf ${TAR_FILE} hello-world
+                """
+            }
+        }
+
+        stage('Upload Tarball to Nexus') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'nexus_docker_cred', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                    sh """
+                        curl -u "$NEXUS_USER:$NEXUS_PASS" --upload-file ${TAR_FILE} ${NEXUS_URL}${TAR_FILE}
+                    """
                 }
             }
         }
-        
     }
 
     post {
         success {
-            echo "✅ Deployment successful!"
+            echo "✅ Source code successfully archived and uploaded to Nexus!"
         }
         failure {
-            echo "❌ Deployment failed. Check logs."
+            echo "❌ Upload failed. Check logs."
         }
     }
 }

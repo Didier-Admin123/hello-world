@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        REMOTE_HOST = "172.23.215.51"
+        REMOTE_HOST = "192.168.0.102"
         REMOTE_USER = "jenkins"
         APP_DIR = "/opt"
         GIT_REPO = "git@github.com:Didier-Admin123/hello-world.git"
